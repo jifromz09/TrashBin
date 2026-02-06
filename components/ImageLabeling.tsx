@@ -32,10 +32,12 @@ export default function ImageLabelingComponent() {
     setLabels([]);
 
     try {
-      const detectedLabels = await ImageLabeling.imageLabeling(imageUri, {
-        confidenceThreshold: 0.6,
-    });
-      setLabels(detectedLabels);
+      const detectedLabels = await ImageLabeling.label(uri);
+      // 
+      const filteredLabels = detectedLabels.filter(
+        (label) => label.confidence >= 0.6
+      );
+      setLabels(filteredLabels);
     } catch (error) {
       console.error('Image labeling failed:', error);
     } finally {
