@@ -25,6 +25,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+  classificationContainer: {
+    marginTop: 20,
+    padding: 20,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  classificationText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+  },
 });
 
 export default styles;

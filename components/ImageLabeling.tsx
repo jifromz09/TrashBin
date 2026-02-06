@@ -4,7 +4,6 @@ import {
   Text,
   Button,
   Image,
-  FlatList,
   ActivityIndicator,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -13,7 +12,7 @@ import styles from './styles';
 
 export default function ImageLabelingComponent() {
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [labels, setLabels] = useState<any[]>([]);
+  const [classification, setClassification] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const pickImageAndLabel = async () => {
@@ -29,7 +28,7 @@ export default function ImageLabelingComponent() {
     const uri = result.assets[0].uri;
     setImageUri(uri);
     setLoading(true);
-    setLabels([]);
+    setClassification(null);
 
     try {
       const detectedLabels = await ImageLabeling.label(uri);
@@ -37,7 +36,20 @@ export default function ImageLabelingComponent() {
       const filteredLabels = detectedLabels.filter(
         (label) => label.confidence >= 0.6
       );
-      setLabels(filteredLabels);
+      
+      // Check if any label contains plastic-related keywords
+      const plasticKeywords = [
+        'plastic', 'bottle', 'container', 'bag', 'package',
+        'wrapper', 'cup', 'straw', 'utensil', 'recyclable',
+        'polyethylene', 'pet', 'pvc', 'polystyrene'
+      ];
+      
+      const isPlastic = filteredLabels.some((label) => {
+        const labelText = label.text.toLowerCase();
+        return plasticKeywords.some(keyword => labelText.includes(keyword));
+      });
+      
+      setClassification(isPlastic ? 'Plastic' : 'Non-plastic');
     } catch (error) {
       console.error('Image labeling failed:', error);
     } finally {
@@ -55,18 +67,11 @@ export default function ImageLabelingComponent() {
 
       {loading && <ActivityIndicator size="large" />}
 
-      <FlatList
-        data={labels}
-        keyExtractor={(item) => item.index.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.labelRow}>
-            <Text style={styles.labelText}>{item.text}</Text>
-            <Text style={styles.confidence}>
-              {(item.confidence * 100).toFixed(1)}%
-            </Text>
-          </View>
-        )}
-      />
+      {classification && (
+        <View style={styles.classificationContainer}>
+          <Text style={styles.classificationText}>{classification}</Text>
+        </View>
+      )}
     </View>
   );
 }
