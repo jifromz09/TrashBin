@@ -9,6 +9,7 @@ import {
 import { launchImageLibrary } from 'react-native-image-picker';
 import ImageLabeling from '@react-native-ml-kit/image-labeling';
 import styles from './styles';
+import {ActivityIndicatorSize, BUTTON_LABEL, CLASSIFICATION, MEDIA_QUYALITY, MEDIA_TYPE, PLASTIC_KEYWORDS } from '../models/ImageLabeling.models';
 
 export default function ImageLabelingComponent() {
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -17,13 +18,11 @@ export default function ImageLabelingComponent() {
 
   const pickImageAndLabel = async () => {
     const result = await launchImageLibrary({
-      mediaType: 'photo',
-      quality: 1,
+      mediaType: MEDIA_TYPE.PHOTO,
+      quality: MEDIA_QUYALITY.DEFAULT,
     });
 
-    if (result.didCancel || !result.assets?.[0]?.uri) {
-      return;
-    }
+    if (result.didCancel || !result.assets?.[0]?.uri) return;
 
     const uri = result.assets[0].uri;
     setImageUri(uri);
@@ -32,24 +31,17 @@ export default function ImageLabelingComponent() {
 
     try {
       const detectedLabels = await ImageLabeling.label(uri);
-      // 
-      const filteredLabels = detectedLabels.filter(
-        (label) => label.confidence >= 0.6
-      );
-      
+      const filteredLabels = detectedLabels.filter(label => label?.confidence >= 0.6);
+
       // Check if any label contains plastic-related keywords
-      const plasticKeywords = [
-        'plastic', 'bottle', 'container', 'bag', 'package',
-        'wrapper', 'cup', 'straw', 'utensil', 'recyclable',
-        'polyethylene', 'pet', 'pvc', 'polystyrene'
-      ];
-      
       const isPlastic = filteredLabels.some((label) => {
         const labelText = label.text.toLowerCase();
-        return plasticKeywords.some(keyword => labelText.includes(keyword));
+        return Object.values(PLASTIC_KEYWORDS ).forEach((keyword: string) => {
+            return labelText.includes(keyword)
+        });
       });
       
-      setClassification(isPlastic ? 'Plastic' : 'Non-plastic');
+      setClassification(isPlastic ? CLASSIFICATION.PLASTIC : CLASSIFICATION.NONE_PLASTIC);
     } catch (error) {
       console.error('Image labeling failed:', error);
     } finally {
@@ -59,13 +51,14 @@ export default function ImageLabelingComponent() {
 
   return (
     <View style={styles.container}>
-      <Button title="Pick Image & Label" onPress={pickImageAndLabel} />
+
+      <Button title={`${BUTTON_LABEL}`} onPress={pickImageAndLabel} />
 
       {imageUri && (
         <Image source={{ uri: imageUri }} style={styles.image} />
       )}
 
-      {loading && <ActivityIndicator size="large" />}
+      {loading && <ActivityIndicator size={`${ActivityIndicatorSize.LARGE}`}/>}
 
       {classification && (
         <View style={styles.classificationContainer}>
