@@ -85,6 +85,14 @@ android {
         versionCode 1
         versionName "1.0"
     }
+    
+    // Add Kotlin source sets
+    sourceSets {
+        main {
+            java.srcDirs += 'src/main/kotlin'
+        }
+    }
+    
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
