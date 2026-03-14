@@ -10,8 +10,10 @@ export default function VisionCamera() {
 
   const requestPermission = async () => {
     const status = await Camera.requestCameraPermission();
-    if (status === 'granted') {
+    if (status === 'authorized' || status === 'granted') {
       setPermission('granted');
+    } else if (status === 'restricted') {
+      setPermission('restricted');
     } else {
       setPermission('denied');
     }
@@ -20,12 +22,16 @@ export default function VisionCamera() {
   useEffect(() => {
     (async () => {
       const status = await Camera.getCameraPermissionStatus();
-      if (status === 'granted') {
+      if (status === 'authorized' || status === 'granted') {
         setPermission('granted');
         return;
       }
       if (status === 'restricted') {
         setPermission('restricted');
+        return;
+      }
+      if (status === 'denied') {
+        setPermission('denied');
         return;
       }
       await requestPermission();
