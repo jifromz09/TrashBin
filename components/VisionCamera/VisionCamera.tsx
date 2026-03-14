@@ -1,15 +1,50 @@
-import { StyleSheet } from 'react-native';
-import { Camera, useCameraDevices } from 'react-native-vision-camera';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, Text } from 'react-native';
+import { Camera, useCameraDevice } from 'react-native-vision-camera';
 
 export default function VisionCamera() {
-  const devices = useCameraDevices('wide-angle-camera');
-  const device = devices.back;
+  const device = useCameraDevice('back');
+  const [hasPermission, setHasPermission] = useState(false);
+
+  useEffect(() => {
+    const requestPermission = async () => {
+      const status = await Camera.requestCameraPermission();
+      setHasPermission(status === 'authorized');
+    };
+
+    requestPermission();
+  }, []);
+
+  if (!hasPermission) {
+    return (
+      <View style={styles.center}>
+        <Text>No Camera Permission</Text>
+      </View>
+    );
+  }
+
+  if (device == null) {
+    return (
+      <View style={styles.center}>
+        <Text>Loading Camera...</Text>
+      </View>
+    );
+  }
 
   return (
     <Camera
       style={StyleSheet.absoluteFill}
       device={device}
       isActive={true}
+      photo={true}
     />
   );
 }
+
+const styles = StyleSheet.create({
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
