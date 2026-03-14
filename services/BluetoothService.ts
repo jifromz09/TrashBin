@@ -1,5 +1,6 @@
 import { BleManager, Device, State, Characteristic } from 'react-native-ble-plx';
 import { PermissionsAndroid, Platform } from 'react-native';
+import { Buffer } from 'buffer';
 
 // UUIDs from the embedded device configuration
 export const SERVICE_UUID = '19B10000-E8F2-537E-4F6C-D104768A1214';
@@ -147,15 +148,17 @@ export class BluetoothService {
       console.log('Connecting to device:', device.name);
       
       // Connect to device
-      this.device = await device.connectToDevice();
+      this.device = await device.connect();
       console.log('Connected to device');
 
       // Discover services and characteristics
-      await this.device.discoverAllServicesAndCharacteristics();
+      if (this.device) {
+        await this.device.discoverAllServicesAndCharacteristics();
+      }
       console.log('Services and characteristics discovered');
 
       // Monitor connection state
-      this.device.onDisconnected((error, disconnectedDevice) => {
+      this.device?.onDisconnected((error, disconnectedDevice) => {
         console.log('Device disconnected:', disconnectedDevice?.name);
         if (error) {
           console.error('Disconnection error:', error);
@@ -207,6 +210,13 @@ export class BluetoothService {
     }
 
     try {
+      if (!this.device) {
+        const msg = 'Device not connected, cannot subscribe';
+        console.error(msg);
+        onError?.(msg);
+        return;
+      }
+
       console.log('Subscribing to data characteristic...');
       
       this.dataSubscription = this.device.monitorCharacteristicForService(
@@ -214,24 +224,36 @@ export class BluetoothService {
         DATA_CHARACTERISTIC_UUID,
         (error, characteristic) => {
           if (error) {
-            console.error('Monitoring error:', error);
-            onError?.(error.message);
+            const errMsg = error?.message || JSON.stringify(error || 'Unknown error');
+            console.error('Monitoring error:', errMsg);
+            onError?.(errMsg);
             return;
           }
 
-          if (characteristic?.value) {
-            // Decode base64 value
-            const data = Buffer.from(characteristic.value, 'base64').toString('utf-8');
-            console.log('Received data:', data);
-            onDataReceived(data);
+          if (!characteristic) {
+            const errMsg = 'Monitoring error: characteristic is null';
+            console.error(errMsg);
+            onError?.(errMsg);
+            return;
           }
+
+          if (!characteristic.value) {
+            console.log('Monitoring callback: no value yet');
+            return;
+          }
+
+          // Decode base64 value
+          const data = Buffer.from(characteristic.value, 'base64').toString('utf-8');
+          console.log('Received data:', data);
+          onDataReceived(data);
         }
       );
       
       console.log('Subscribed to data notifications');
     } catch (error: any) {
-      console.error('Subscribe error:', error);
-      onError?.(error.message || 'Failed to subscribe to notifications');
+      const errMsg = error?.message || JSON.stringify(error || 'Failed to subscribe to notifications');
+      console.error('Subscribe error:', errMsg);
+      onError?.(errMsg);
     }
   }
 
@@ -247,11 +269,16 @@ export class BluetoothService {
     }
 
     try {
+      if (!command || command.trim().length === 0) {
+        onError?.('Command is empty');
+        return;
+      }
+      const trimmed = command.trim();
       // Encode command to base64
-      const commandUpper = command.toUpperCase();
+      const commandUpper = trimmed.toUpperCase();
       const encodedCommand = Buffer.from(commandUpper, 'utf-8').toString('base64');
       
-      console.log('Sending command:', commandUpper);
+      console.log('Sending command:', commandUpper, 'encoded:', encodedCommand);
       
       await this.device.writeCharacteristicWithResponseForService(
         SERVICE_UUID,

@@ -4,14 +4,13 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
-  PermissionsAndroid,
   Platform,
   TouchableOpacity,
   Image,
   Button,
   Switch,
 } from 'react-native';
-import { Camera, useCameraDevice, useFrameProcessor, useCameraPermission } from 'react-native-vision-camera';
+import { Camera, useCameraDevice, useFrameProcessor } from 'react-native-vision-camera';
 import { detectObjects, FrameProcessorConfig, DetectedObject } from 'vision-camera-realtime-object-detection';
 import { launchImageLibrary, launchCamera, ImagePickerResponse, Asset } from 'react-native-image-picker';
 import { getBluetoothService } from '../services/BluetoothService';
@@ -24,10 +23,11 @@ interface MeasurementData {
 }
 
 type ViewMode = 'camera' | 'image';
+type PermissionState = 'granted' | 'denied' | 'restricted' | null;
 
 export default function ImageLabelingComponent() {
   const [viewMode, setViewMode] = useState<ViewMode>('camera');
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [hasPermission, setHasPermission] = useState<PermissionState>(null);
   const [classification, setClassification] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [processingImage, setProcessingImage] = useState(false);
@@ -64,21 +64,24 @@ export default function ImageLabelingComponent() {
   // Request camera permissions
   useEffect(() => {
     (async () => {
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.CAMERA,
-          {
-            title: 'Camera Permission',
-            message: 'This app needs access to your camera for object detection',
-            buttonNeutral: 'Ask Me Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
-          }
-        );
-        setHasPermission(granted === PermissionsAndroid.RESULTS.GRANTED);
+      const status = await Camera.getCameraPermissionStatus();
+      if (status === 'authorized') {
+        setHasPermission('granted');
+        return;
+      }
+
+      if (status === 'restricted') {
+        setHasPermission('restricted');
+        return;
+      }
+
+      const requestStatus = await Camera.requestCameraPermission();
+      if (requestStatus === 'authorized') {
+        setHasPermission('granted');
+      } else if (requestStatus === 'restricted') {
+        setHasPermission('restricted');
       } else {
-        const status = await Camera.requestCameraPermission();
-        setHasPermission(status === 'granted');
+        setHasPermission('denied');
       }
     })();
   }, []);
@@ -562,7 +565,18 @@ export default function ImageLabelingComponent() {
     );
   }
 
-  if (hasPermission === false) {
+  if (hasPermission === 'restricted') {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Camera access is restricted</Text>
+        <Text style={styles.errorSubtext}>
+          Your device policy or profile is blocking camera usage. Please remove the restriction in system settings and restart the app.
+        </Text>
+      </View>
+    );
+  }
+
+  if (hasPermission === 'denied') {
     return (
       <View style={styles.container}>
         <Text style={styles.errorText}>Camera permission denied</Text>

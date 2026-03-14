@@ -14,6 +14,15 @@ class MainActivity : ReactActivity() {
   override fun getMainComponentName(): String = "TrashBinApp"
 
   /**
+   * Avoid using ReactNativeHost directly in new architecture by skipping ReactActivity's
+   * default onWindowFocusChanged behavior when focus changes.
+   */
+  override fun onWindowFocusChanged(hasFocus: Boolean) {
+    // Do not call super.onWindowFocusChanged(hasFocus) to avoid ReactActivity calling getReactNativeHost.
+    // The app should still render properly as this is only for focus notification.
+  }
+
+  /**
    * Returns the instance of the [ReactActivityDelegate]. We use [DefaultReactActivityDelegate]
    * which allows you to enable New Architecture with a single boolean flags [fabricEnabled]
    */
