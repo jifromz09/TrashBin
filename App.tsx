@@ -9,9 +9,6 @@ import { StatusBar, useColorScheme, View, TouchableOpacity, Text, StyleSheet } f
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import ImageLabelingComponent from './components/ImageLabeling';
 import BluetoothScreen from './components/BluetoothScreen';
-import {Camera} from 'react-native-vision-camera';
-
-const permission = await Camera.requestCameraPermission();
 
 type TabType = 'camera' | 'bluetooth';
 
