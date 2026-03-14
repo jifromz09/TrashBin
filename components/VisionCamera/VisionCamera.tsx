@@ -2,13 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { Camera, useCameraDevice } from 'react-native-vision-camera';
 
+const AUTHORIZED = "authorized";
+
 export default function VisionCamera() {
   const device = useCameraDevice('back');
   const [hasPermission, setHasPermission] = useState(false);
+  
 
   useEffect(() => {
     const requestPermission = async () => {
       const status = await Camera.requestCameraPermission();
+      if(!status || status != AUTHORIZED) return;
       setHasPermission(status === 'authorized');
     };
 
