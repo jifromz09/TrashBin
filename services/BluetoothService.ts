@@ -1,4 +1,4 @@
-import { BleManager, Device, State, Characteristic } from 'react-native-ble-plx';
+import { BleManager, Device, State } from 'react-native-ble-plx';
 import { PermissionsAndroid, Platform } from 'react-native';
 import { Buffer } from 'buffer';
 

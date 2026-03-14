@@ -1,81 +1,36 @@
- import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, ActivityIndicator, TouchableOpacity, Linking } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, Text } from 'react-native';
 import { Camera, useCameraDevice } from 'react-native-vision-camera';
 
-type PermissionState = 'granted' | 'denied' | 'restricted' | null;
+const AUTHORIZED = "authorized";
 
 export default function VisionCamera() {
-  const [permission, setPermission] = useState<PermissionState>(null);
   const device = useCameraDevice('back');
-
-  const requestPermission = async () => {
-    const status = await Camera.requestCameraPermission();
-    if (status === 'authorized' || status === 'granted') {
-      setPermission('granted');
-    } else if (status === 'restricted') {
-      setPermission('restricted');
-    } else {
-      setPermission('denied');
-    }
-  };
+  const [hasPermission, setHasPermission] = useState(false);
+  
 
   useEffect(() => {
-    (async () => {
-      const status = await Camera.getCameraPermissionStatus();
-      if (status === 'authorized' || status === 'granted') {
-        setPermission('granted');
-        return;
-      }
-      if (status === 'restricted') {
-        setPermission('restricted');
-        return;
-      }
-      if (status === 'denied') {
-        setPermission('denied');
-        return;
-      }
-      await requestPermission();
-    })();
+    const requestPermission = async () => {
+      const status = await Camera.requestCameraPermission();
+      if(!status || status != AUTHORIZED) return;
+      setHasPermission(status === 'authorized');
+    };
+
+    requestPermission();
   }, []);
 
-  if (permission === null) {
+  if (!hasPermission) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
-        <Text style={styles.text}>Checking camera permission...</Text>
+        <Text>No Camera Permission</Text>
       </View>
     );
   }
 
-  if (permission === 'restricted') {
+  if (device == null) {
     return (
       <View style={styles.center}>
-        <Text style={styles.error}>Camera access is restricted by your device settings or policy.</Text>
-        <Text style={styles.subtext}>Please enable camera in system settings or remove any managed profile restrictions.</Text>
-      </View>
-    );
-  }
-
-  if (permission === 'denied') {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.error}>Camera permission denied.</Text>
-        <Text style={styles.subtext}>Enable camera permission in settings and restart the app.</Text>
-        <TouchableOpacity style={styles.button} onPress={requestPermission}>
-          <Text style={styles.buttonText}>Request Permission Again</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.buttonSecondary} onPress={() => Linking.openSettings()}>
-          <Text style={styles.buttonText}>Open App Settings</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  if (!device) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.error}>No camera device available.</Text>
-        <Text style={styles.subtext}>This can happen on some devices or if camera is disabled.</Text>
+        <Text>Loading Camera...</Text>
       </View>
     );
   }
@@ -85,6 +40,7 @@ export default function VisionCamera() {
       style={StyleSheet.absoluteFill}
       device={device}
       isActive={true}
+      photo={true}
     />
   );
 }
@@ -94,42 +50,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#000',
-  },
-  text: {
-    color: '#fff',
-    marginTop: 8,
-  },
-  error: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtext: {
-    color: '#ddd',
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  button: {
-    marginTop: 14,
-    backgroundColor: '#2196F3',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  buttonSecondary: {
-    marginTop: 10,
-    backgroundColor: '#555',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    textAlign: 'center',
   },
 });
