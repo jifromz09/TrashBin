@@ -1,4 +1,4 @@
- import { StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { Camera, useCameraDevices } from 'react-native-vision-camera';
 
 export default function VisionCamera() {
